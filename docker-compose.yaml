@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  test:
+    image: nvidia/cuda:11.8.0-devel-ubuntu22.04
+    ports:
+      - 8989:8989
+    command: /bin/bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities: [gpu]
+  diffusion-webui:
+    build:
+      context: https://github.com/sycomix/stable-diffusion-webui.git
+      dockerfile: Dockerfile
+    ports:
+      - 8989:8989
+    volumes:
+      - /home/syco/sd_data/models:/app/stable-diffusion-webui/models
+      - /home/syco/sd_data/outputs:/app/stable-diffusion-webui/outputs
+      - /home/syco/sd_data/extensions:/app/stable-diffusion-webui/extensions
+      - /home/syco/sd_data/vae:/app/stable-diffusion-webui/vae
