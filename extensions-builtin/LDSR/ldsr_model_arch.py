@@ -71,9 +71,9 @@ class LDSR:
         split_input = height >= 128 and width >= 128
 
         if split_input:
-            ks = 128
             stride = 64
-            vqf = 4  #
+            vqf = 4
+            ks = 128
             model.split_input_params = {"ks": (ks, ks), "stride": (stride, stride),
                                         "vqf": vqf,
                                         "patch_distributed_vq": True,
@@ -82,13 +82,12 @@ class LDSR:
                                         "clip_min_weight": 0.01,
                                         "clip_max_tie_weight": 0.5,
                                         "clip_min_tie_weight": 0.01}
-        else:
-            if hasattr(model, "split_input_params"):
-                delattr(model, "split_input_params")
+        elif hasattr(model, "split_input_params"):
+            delattr(model, "split_input_params")
 
         x_t = None
         logs = None
-        for n in range(n_runs):
+        for _ in range(n_runs):
             if custom_shape is not None:
                 x_t = torch.randn(1, custom_shape[1], custom_shape[2], custom_shape[3]).to(model.device)
                 x_t = repeat(x_t, '1 c h w -> b c h w', b=custom_shape[0])

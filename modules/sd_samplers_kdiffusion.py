@@ -72,9 +72,11 @@ class CFGDenoiser(torch.nn.Module):
 
     def combine_denoised_for_edit_model(self, x_out, cond_scale):
         out_cond, out_img_cond, out_uncond = x_out.chunk(3)
-        denoised = out_uncond + cond_scale * (out_cond - out_img_cond) + self.image_cfg_scale * (out_img_cond - out_uncond)
-
-        return denoised
+        return (
+            out_uncond
+            + cond_scale * (out_cond - out_img_cond)
+            + self.image_cfg_scale * (out_img_cond - out_uncond)
+        )
 
     def forward(self, x, sigma, uncond, cond, cond_scale, image_cond):
         if state.interrupted or state.skipped:
@@ -87,7 +89,9 @@ class CFGDenoiser(torch.nn.Module):
         conds_list, tensor = prompt_parser.reconstruct_multicond_batch(cond, self.step)
         uncond = prompt_parser.reconstruct_cond_batch(uncond, self.step)
 
-        assert not is_edit_model or all([len(conds) == 1 for conds in conds_list]), "AND is not supported for InstructPix2Pix checkpoint (unless using Image CFG scale = 1.0)"
+        assert not is_edit_model or all(
+            len(conds) == 1 for conds in conds_list
+        ), "AND is not supported for InstructPix2Pix checkpoint (unless using Image CFG scale = 1.0)"
 
         batch_size = len(conds_list)
         repeats = [len(conds_list[i]) for i in range(batch_size)]
@@ -151,11 +155,11 @@ class CFGDenoiser(torch.nn.Module):
 
         devices.test_for_nans(x_out, "unet")
 
-        if opts.live_preview_content == "Prompt":
-            sd_samplers_common.store_latent(x_out[0:uncond.shape[0]])
-        elif opts.live_preview_content == "Negative prompt":
+        if opts.live_preview_content == "Negative prompt":
             sd_samplers_common.store_latent(x_out[-uncond.shape[0]:])
 
+        elif opts.live_preview_content == "Prompt":
+            sd_samplers_common.store_latent(x_out[:uncond.shape[0]])
         if not is_edit_model:
             denoised = self.combine_denoised(x_out, conds_list, uncond, cond_scale)
         else:
@@ -182,7 +186,9 @@ class TorchHijack:
         if hasattr(torch, item):
             return getattr(torch, item)
 
-        raise AttributeError("'{}' object has no attribute '{}'".format(type(self).__name__, item))
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{item}'"
+        )
 
     def randn_like(self, x):
         if self.sampler_noises:
@@ -247,11 +253,12 @@ class KDiffusionSampler:
 
         k_diffusion.sampling.torch = TorchHijack(self.sampler_noises if self.sampler_noises is not None else [])
 
-        extra_params_kwargs = {}
-        for param_name in self.extra_params:
-            if hasattr(p, param_name) and param_name in inspect.signature(self.func).parameters:
-                extra_params_kwargs[param_name] = getattr(p, param_name)
-
+        extra_params_kwargs = {
+            param_name: getattr(p, param_name)
+            for param_name in self.extra_params
+            if hasattr(p, param_name)
+            and param_name in inspect.signature(self.func).parameters
+        }
         if 'eta' in inspect.signature(self.func).parameters:
             if self.eta != 1.0:
                 p.extra_generation_params["Eta"] = self.eta
@@ -299,7 +306,7 @@ class KDiffusionSampler:
 
         sigma_sched = sigmas[steps - t_enc - 1:]
         xi = x + noise * sigma_sched[0]
-        
+
         extra_params_kwargs = self.initialize(p)
         parameters = inspect.signature(self.func).parameters
 
@@ -328,9 +335,17 @@ class KDiffusionSampler:
             'cond_scale': p.cfg_scale,
         }
 
-        samples = self.launch_sampling(t_enc + 1, lambda: self.func(self.model_wrap_cfg, xi, extra_args=extra_args, disable=False, callback=self.callback_state, **extra_params_kwargs))
-
-        return samples
+        return self.launch_sampling(
+            t_enc + 1,
+            lambda: self.func(
+                self.model_wrap_cfg,
+                xi,
+                extra_args=extra_args,
+                disable=False,
+                callback=self.callback_state,
+                **extra_params_kwargs
+            ),
+        )
 
     def sample(self, p, x, conditioning, unconditional_conditioning, steps=None, image_conditioning=None):
         steps = steps or p.steps
@@ -355,12 +370,20 @@ class KDiffusionSampler:
             extra_params_kwargs['noise_sampler'] = noise_sampler
 
         self.last_latent = x
-        samples = self.launch_sampling(steps, lambda: self.func(self.model_wrap_cfg, x, extra_args={
-            'cond': conditioning, 
-            'image_cond': image_conditioning, 
-            'uncond': unconditional_conditioning, 
-            'cond_scale': p.cfg_scale
-        }, disable=False, callback=self.callback_state, **extra_params_kwargs))
-
-        return samples
+        return self.launch_sampling(
+            steps,
+            lambda: self.func(
+                self.model_wrap_cfg,
+                x,
+                extra_args={
+                    'cond': conditioning,
+                    'image_cond': image_conditioning,
+                    'uncond': unconditional_conditioning,
+                    'cond_scale': p.cfg_scale,
+                },
+                disable=False,
+                callback=self.callback_state,
+                **extra_params_kwargs
+            ),
+        )
 

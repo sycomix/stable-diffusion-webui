@@ -113,7 +113,7 @@ class State:
         self.current_image_sampling_step = 0
 
     def dict(self):
-        obj = {
+        return {
             "skipped": self.skipped,
             "interrupted": self.interrupted,
             "job": self.job,
@@ -123,8 +123,6 @@ class State:
             "sampling_step": self.sampling_step,
             "sampling_steps": self.sampling_steps,
         }
-
-        return obj
 
     def begin(self):
         self.sampling_step = 0
@@ -355,39 +353,138 @@ options_templates.update(options_section(('interrogate', "Interrogate Options"),
     "deepbooru_filter_tags": OptionInfo("", "filter out those tags from deepbooru output (separated by comma)"),
 }))
 
-options_templates.update(options_section(('extra_networks', "Extra Networks"), {
-    "extra_networks_default_view": OptionInfo("cards", "Default view for Extra Networks", gr.Dropdown, {"choices": ["cards", "thumbs"]}),
-    "extra_networks_default_multiplier": OptionInfo(1.0, "Multiplier for extra networks", gr.Slider, {"minimum": 0.0, "maximum": 1.0, "step": 0.01}),
-    "extra_networks_card_width": OptionInfo(0, "Card width for Extra Networks (px)"),
-    "extra_networks_card_height": OptionInfo(0, "Card height for Extra Networks (px)"),
-    "extra_networks_add_text_separator": OptionInfo(" ", "Extra text to add before <...> when adding extra network to prompt"),
-    "sd_hypernetwork": OptionInfo("None", "Add hypernetwork to prompt", gr.Dropdown, lambda: {"choices": [""] + [x for x in hypernetworks.keys()]}, refresh=reload_hypernetworks),
-}))
+options_templates.update(
+    options_section(
+        ('extra_networks', "Extra Networks"),
+        {
+            "extra_networks_default_view": OptionInfo(
+                "cards",
+                "Default view for Extra Networks",
+                gr.Dropdown,
+                {"choices": ["cards", "thumbs"]},
+            ),
+            "extra_networks_default_multiplier": OptionInfo(
+                1.0,
+                "Multiplier for extra networks",
+                gr.Slider,
+                {"minimum": 0.0, "maximum": 1.0, "step": 0.01},
+            ),
+            "extra_networks_card_width": OptionInfo(
+                0, "Card width for Extra Networks (px)"
+            ),
+            "extra_networks_card_height": OptionInfo(
+                0, "Card height for Extra Networks (px)"
+            ),
+            "extra_networks_add_text_separator": OptionInfo(
+                " ",
+                "Extra text to add before <...> when adding extra network to prompt",
+            ),
+            "sd_hypernetwork": OptionInfo(
+                "None",
+                "Add hypernetwork to prompt",
+                gr.Dropdown,
+                lambda: {"choices": [""] + list(hypernetworks.keys())},
+                refresh=reload_hypernetworks,
+            ),
+        },
+    )
+)
 
-options_templates.update(options_section(('ui', "User interface"), {
-    "return_grid": OptionInfo(True, "Show grid in results for web"),
-    "return_mask": OptionInfo(False, "For inpainting, include the greyscale mask in results for web"),
-    "return_mask_composite": OptionInfo(False, "For inpainting, include masked composite in results for web"),
-    "do_not_show_images": OptionInfo(False, "Do not show any images in results for web"),
-    "add_model_hash_to_info": OptionInfo(True, "Add model hash to generation information"),
-    "add_model_name_to_info": OptionInfo(True, "Add model name to generation information"),
-    "disable_weights_auto_swap": OptionInfo(True, "When reading generation parameters from text into UI (from PNG info or pasted text), do not change the selected model/checkpoint."),
-    "send_seed": OptionInfo(True, "Send seed when sending prompt or image to other interface"),
-    "send_size": OptionInfo(True, "Send size when sending prompt or image to another interface"),
-    "font": OptionInfo("", "Font for image grids that have text"),
-    "js_modal_lightbox": OptionInfo(True, "Enable full page image viewer"),
-    "js_modal_lightbox_initially_zoomed": OptionInfo(True, "Show images zoomed in by default in full page image viewer"),
-    "show_progress_in_title": OptionInfo(True, "Show generation progress in window title."),
-    "samplers_in_dropdown": OptionInfo(True, "Use dropdown for sampler selection instead of radio group"),
-    "dimensions_and_batch_together": OptionInfo(True, "Show Width/Height and Batch sliders in same row"),
-    "keyedit_precision_attention": OptionInfo(0.1, "Ctrl+up/down precision when editing (attention:1.1)", gr.Slider, {"minimum": 0.01, "maximum": 0.2, "step": 0.001}),
-    "keyedit_precision_extra": OptionInfo(0.05, "Ctrl+up/down precision when editing <extra networks:0.9>", gr.Slider, {"minimum": 0.01, "maximum": 0.2, "step": 0.001}),
-    "quicksettings": OptionInfo("sd_model_checkpoint", "Quicksettings list"),
-    "hidden_tabs": OptionInfo([], "Hidden UI tabs (requires restart)", ui_components.DropdownMulti, lambda: {"choices": [x for x in tab_names]}),
-    "ui_reorder": OptionInfo(", ".join(ui_reorder_categories), "txt2img/img2img UI item order"),
-    "ui_extra_networks_tab_reorder": OptionInfo("", "Extra networks tab order"),
-    "localization": OptionInfo("None", "Localization (requires restart)", gr.Dropdown, lambda: {"choices": ["None"] + list(localization.localizations.keys())}, refresh=lambda: localization.list_localizations(cmd_opts.localizations_dir)),
-}))
+options_templates.update(
+    options_section(
+        ('ui', "User interface"),
+        {
+            "return_grid": OptionInfo(True, "Show grid in results for web"),
+            "return_mask": OptionInfo(
+                False,
+                "For inpainting, include the greyscale mask in results for web",
+            ),
+            "return_mask_composite": OptionInfo(
+                False,
+                "For inpainting, include masked composite in results for web",
+            ),
+            "do_not_show_images": OptionInfo(
+                False, "Do not show any images in results for web"
+            ),
+            "add_model_hash_to_info": OptionInfo(
+                True, "Add model hash to generation information"
+            ),
+            "add_model_name_to_info": OptionInfo(
+                True, "Add model name to generation information"
+            ),
+            "disable_weights_auto_swap": OptionInfo(
+                True,
+                "When reading generation parameters from text into UI (from PNG info or pasted text), do not change the selected model/checkpoint.",
+            ),
+            "send_seed": OptionInfo(
+                True,
+                "Send seed when sending prompt or image to other interface",
+            ),
+            "send_size": OptionInfo(
+                True,
+                "Send size when sending prompt or image to another interface",
+            ),
+            "font": OptionInfo("", "Font for image grids that have text"),
+            "js_modal_lightbox": OptionInfo(
+                True, "Enable full page image viewer"
+            ),
+            "js_modal_lightbox_initially_zoomed": OptionInfo(
+                True,
+                "Show images zoomed in by default in full page image viewer",
+            ),
+            "show_progress_in_title": OptionInfo(
+                True, "Show generation progress in window title."
+            ),
+            "samplers_in_dropdown": OptionInfo(
+                True,
+                "Use dropdown for sampler selection instead of radio group",
+            ),
+            "dimensions_and_batch_together": OptionInfo(
+                True, "Show Width/Height and Batch sliders in same row"
+            ),
+            "keyedit_precision_attention": OptionInfo(
+                0.1,
+                "Ctrl+up/down precision when editing (attention:1.1)",
+                gr.Slider,
+                {"minimum": 0.01, "maximum": 0.2, "step": 0.001},
+            ),
+            "keyedit_precision_extra": OptionInfo(
+                0.05,
+                "Ctrl+up/down precision when editing <extra networks:0.9>",
+                gr.Slider,
+                {"minimum": 0.01, "maximum": 0.2, "step": 0.001},
+            ),
+            "quicksettings": OptionInfo(
+                "sd_model_checkpoint", "Quicksettings list"
+            ),
+            "hidden_tabs": OptionInfo(
+                [],
+                "Hidden UI tabs (requires restart)",
+                ui_components.DropdownMulti,
+                lambda: {"choices": list(tab_names)},
+            ),
+            "ui_reorder": OptionInfo(
+                ", ".join(ui_reorder_categories),
+                "txt2img/img2img UI item order",
+            ),
+            "ui_extra_networks_tab_reorder": OptionInfo(
+                "", "Extra networks tab order"
+            ),
+            "localization": OptionInfo(
+                "None",
+                "Localization (requires restart)",
+                gr.Dropdown,
+                lambda: {
+                    "choices": ["None"]
+                    + list(localization.localizations.keys())
+                },
+                refresh=lambda: localization.list_localizations(
+                    cmd_opts.localizations_dir
+                ),
+            ),
+        },
+    )
+)
 
 options_templates.update(options_section(('ui', "Live previews"), {
     "show_progressbar": OptionInfo(True, "Show progressbar"),
@@ -492,10 +589,7 @@ class Options:
         """returns the default value for the key"""
 
         data_label = self.data_labels.get(key)
-        if data_label is None:
-            return None
-
-        return data_label.default
+        return None if data_label is None else data_label.default
 
     def save(self, filename):
         assert not cmd_opts.freeze_settings, "saving settings is disabled"
@@ -549,7 +643,9 @@ class Options:
             if item.section not in section_ids:
                 section_ids[item.section] = len(section_ids)
 
-        self.data_labels = {k: v for k, v in sorted(settings_items, key=lambda x: section_ids[x[1].section])}
+        self.data_labels = dict(
+            sorted(settings_items, key=lambda x: section_ids[x[1].section])
+        )
 
     def cast_value(self, key, value):
         """casts an arbitrary to the same type as this setting's value with key

@@ -84,10 +84,10 @@ there are reports of issues with training tab on the latest version.
 Use --skip-version-check commandline argument to disable this check.
         """.strip())
 
-    expected_xformers_version = "0.0.16rc425"
     if shared.xformers_available:
         import xformers
 
+        expected_xformers_version = "0.0.16rc425"
         if version.parse(xformers.__version__) < version.parse(expected_xformers_version):
             errors.print_error_explanation(f"""
 You are running xformers {xformers.__version__}.
@@ -251,7 +251,7 @@ def webui():
             gradio_auth_creds += [x.strip() for x in cmd_opts.gradio_auth.strip('"').replace('\n', '').split(',') if x.strip()]
         if cmd_opts.gradio_auth_path:
             with open(cmd_opts.gradio_auth_path, 'r', encoding="utf8") as file:
-                for line in file.readlines():
+                for line in file:
                     gradio_auth_creds += [x.strip() for x in line.split(',') if x.strip()]
 
         app, local_url, share_url = shared.demo.launch(
